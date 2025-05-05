@@ -9,7 +9,7 @@
   <!-- A-Frame -->
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <!-- AR.js -->
-  <script src="https://cdn.jsdelivr.net/gh/jeromeetienne/AR.js/aframe/build/aframe-ar.js"></script>
+  <!-- <script src="https://cdn.jsdelivr.net/gh/jeromeetienne/AR.js/aframe/build/aframe-ar.js"></script> -->
   <!-- Gesture Detector -->
   <script src="https://unpkg.com/aframe-gesture-detector@4.0.5/dist/aframe-gesture-detector.min.js"></script>
 
@@ -170,8 +170,8 @@
   <!-- <div id="debugText">Loading...</div> -->
   <div id="demoText">DEMO NFC AR</div>
 
-  <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;" vr-mode-ui="enabled: false" logger>
-   <!-- <a-scene embedded background="color: #b3b1b1" vr-mode-ui="enabled: false"> -->
+  <!-- <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;" vr-mode-ui="enabled: false" logger> -->
+   <a-scene embedded background="color: #b3b1b1" vr-mode-ui="enabled: false">
 
     <!-- Camera with AR (camera from real world) -->
     <a-camera position="0 1.6 0" rotation-reader look-controls="touchEnabled: false; magicWindowTrackingEnabled: true;"
