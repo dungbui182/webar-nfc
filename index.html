@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>Fixed Rotation & Scale</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- A-Frame -->
+  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+  <!-- AR.js -->
+  <script src="https://cdn.jsdelivr.net/gh/jeromeetienne/AR.js/aframe/build/aframe-ar.js"></script>
+  <!-- Gesture Detector -->
+  <script src="https://unpkg.com/aframe-gesture-detector@4.0.5/dist/aframe-gesture-detector.min.js"></script>
+
+  <!-- Custom Components -->
+  <script>
+    AFRAME.registerComponent('gesture-handler', {
+      schema: { enabled: { default: true } },
+      init: function () {
+        this.handleScale = this.handleScale.bind(this);
+        this.handleRotation = this.handleRotation.bind(this);
+        this.startDistance = null;
+        this.startX = null;
+        this.startY = null; // thêm trong init
+
+        this.el.sceneEl.addEventListener("touchstart", (event) => {
+          if (event.touches.length === 2) {
+            this.startDistance = this.getDistance(event.touches);
+          } else if (event.touches.length === 1) {
+            this.startX = event.touches[0].clientX;
+            this.startY = event.touches[0].clientY; // bắt đầu Y
+          }
+        });
+
+        this.el.sceneEl.addEventListener("touchmove", (event) => {
+          if (event.touches.length === 2) {
+            this.handleScale(event);
+          } else if (event.touches.length === 1) {
+            this.handleRotation(event);
+          }
+        });
+      },
+
+      getDistance: function (touches) {
+        let dx = touches[0].clientX - touches[1].clientX;
+        let dy = touches[0].clientY - touches[1].clientY;
+        return Math.sqrt(dx * dx + dy * dy);
+      },
+
+      handleScale: function (event) {
+        let newDistance = this.getDistance(event.touches);
+        if (!this.startDistance) return;
+        let scaleChange = newDistance / this.startDistance;
+        let model = this.el;
+        let scale = model.getAttribute("scale");
+        model.setAttribute("scale", {
+          x: scale.x * scaleChange,
+          y: scale.y * scaleChange,
+          z: scale.z * scaleChange
+        });
+        this.startDistance = newDistance;
+      },
+
+      // handleRotation: function (event) {
+      //   let newX = event.touches[0].clientX;
+      //   if (this.startX === null) return;
+
+      //   let rotationChange = (newX - this.startX) * 0.5;
+      //   let model = this.el;
+      //   let rotation = model.getAttribute("rotation");
+
+      //   model.setAttribute("rotation", {
+      //     x: 0,
+      //     y: rotation.y + rotationChange,
+      //     z: 0
+      //   });
+
+      //   this.startX = newX;
+      // }
+      handleRotation: function (event) {
+        let newX = event.touches[0].clientX;
+        let newY = event.touches[0].clientY;
+        if (this.startX === null || this.startY === null) return;
+
+        let deltaX = newX - this.startX;
+        let deltaY = newY - this.startY;
+
+        let model = this.el;
+        let rotation = model.getAttribute("rotation");
+
+        // Góc xoay theo Y (ngang) và X (dọc)
+        model.setAttribute("rotation", {
+          x: THREE.MathUtils.clamp(rotation.x + deltaY * 0.3, -90, 90), // tránh lật model
+          y: rotation.y + deltaX * 0.5,
+          z: 0
+        });
+
+        this.startX = newX;
+        this.startY = newY;
+      }
+    });
+
+    AFRAME.registerComponent('logger', {
+      tick: function () {
+        const model = document.querySelector('#model');
+        const camera = document.querySelector('[camera]');
+        const debugText = document.querySelector('#debugText');
+
+        if (model && camera && debugText) {
+          const modelPos = model.getAttribute('position');
+          const modelRot = model.getAttribute('rotation');
+          const camPos = camera.getAttribute('position');
+          const camRot = camera.getAttribute('rotation');
+
+          debugText.innerHTML = ` 
+            <strong>📦 Model</strong><br>
+            Pos: x=${modelPos.x.toFixed(2)} y=${modelPos.y.toFixed(2)} z=${modelPos.z.toFixed(2)}<br>
+            Rot: x=${modelRot.x.toFixed(2)} y=${modelRot.y.toFixed(2)} z=${modelRot.z.toFixed(2)}<br><br>
+            <strong>🎥 Camera</strong><br>
+            Pos: x=${camPos.x.toFixed(2)} y=${camPos.y.toFixed(2)} z=${camPos.z.toFixed(2)}<br>
+            Rot: x=${camRot.x.toFixed(2)} y=${camRot.y.toFixed(2)} z=${camRot.z.toFixed(2)}
+          `;
+        }
+      }
+    });
+  </script>
+
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+    }
+
+    a-scene {
+      width: 100vw;
+      height: 100vh;
+    }
+
+    #debugText {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(0, 0, 0, 0.7);
+      color: white;
+      padding: 10px;
+      font-family: monospace;
+      font-size: 14px;
+      z-index: 999;
+      max-width: 90vw;
+    }
+
+    #demoText {
+      position: absolute;
+      top: 20px;
+      width: 100%;
+      text-align: center;
+      font-size: 24px;
+      font-weight: bold;
+      color: #3396ff;
+      /* xanh dương */
+      font-family: sans-serif;
+      z-index: 999;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Thông tin hiện ngoài màn hình -->
+  <!-- <div id="debugText">Loading...</div> -->
+  <div id="demoText">DEMO NFC AR</div>
+
+  <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;" vr-mode-ui="enabled: false" logger>
+  <!-- <a-scene embedded background="color: #b3b1b1" vr-mode-ui="enabled: false"> -->
+
+    <!-- Camera with AR (camera from real world) -->
+    <a-camera position="0 1.6 0" rotation-reader look-controls="touchEnabled: false; magicWindowTrackingEnabled: true;"
+      wasd-controls="enabled: true" lock-y-rotation></a-camera>
+
+    <!-- Lights -->
+    <a-entity light="type: ambient; intensity: 0.8"></a-entity>
+    <a-entity light="type: directional; intensity: 0.6" position="1 2 1"></a-entity>
+
+    <!-- Model -->
+    <a-entity id="model" gltf-model="ancient_vase_gold-blue-white.glb" position="0 0.5 -3" rotation="0 0 0"
+      scale="1.75 1.75 1.75" frustum-culling="false" gesture-detector gesture-handler>
+    </a-entity>
+
+  </a-scene>
+</body>
+
+</html>
